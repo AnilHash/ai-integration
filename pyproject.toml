@@ -1,0 +1,11 @@
+[project]
+name = "ai-integration"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.139.0",
+    "langfuse>=4.13.0",
+    "openai>=2.44.0",
+]
