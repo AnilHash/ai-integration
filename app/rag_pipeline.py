@@ -60,13 +60,20 @@ def generate_answer(query: str, context: str) -> str:
         "Answer:"
     )
 
-    response = client.chat.completions.create(
+    stream = client.chat.completions.create(
         model=DEFAULT_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=256,
         temperature=0.1,
+        stream=True,
+        stream_options={"include_usage": True},
     )
-    return (response.choices[0].message.content or "").strip()
+    chunks: list[str] = []
+    for chunk in stream:
+        if chunk.choices and chunk.choices[0].delta.content:
+            chunks.append(chunk.choices[0].delta.content)
+
+    return "".join(chunks).strip()
 
 
 @observe(name="rag_query")
