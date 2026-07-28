@@ -50,25 +50,36 @@ def assemble_context(chunks: list[dict]) -> str:
     return context
 
 
-def generate_answer(query: str, context: str) -> str:
-    prompt = (
-        "Answer the question using ONLY the provided context. "
-        "If the context does not contain enough information, say so. "
-        "Be concise - 2-3 sentences maximum.\n\n"
-        f"Context:\n{context}\n\n"
-        f"Question:{query}\n\n"
-        "Answer:"
-    )
+def generate_answer(query: str, context: str, prompt_version: int | None = None) -> str:
+    """
+    prompt_version=None  -> fetch whatever's labeled "production" (normal runtime path)
+    prompt_version=1 or 2 -> force a specific version (used by the A/B test script)
+
+    langfuse_prompt=prompt on the .create() call links this generation to the
+    exact prompt version used — this is what lets Langfuse aggregate metrics
+    per prompt version in the UI, and what the A/B test script queries against.
+    """
+    if prompt_version is not None:
+        prompt = langfuse.get_prompt("rag-answer", version=prompt_version)
+    else:
+        prompt = langfuse.get_prompt("rag-answer", label="production")
+
+    compiled_prompt = prompt.compile(context=context, query=query)
+
+    print(compiled_prompt)
 
     stream = client.chat.completions.create(
         model=DEFAULT_MODEL,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[{"role": "user", "content": compiled_prompt}],
         max_tokens=256,
         temperature=0.1,
         stream=True,
         stream_options={"include_usage": True},
-    )
+        langfuse_prompt=prompt,
+    )  # type: ignore
+
     chunks: list[str] = []
+
     for chunk in stream:
         if chunk.choices and chunk.choices[0].delta.content:
             chunks.append(chunk.choices[0].delta.content)
@@ -77,7 +88,9 @@ def generate_answer(query: str, context: str) -> str:
 
 
 @observe(name="rag_query")
-def run_rag_pipeline(query: str, user_id: str = "anonymous") -> dict:
+def run_rag_pipeline(
+    query: str, user_id: str = "anonymous", prompt_version: int | None = None
+) -> dict:
     with propagate_attributes(
         user_id=user_id,
         tags=["rag", "v1", "mock_retrieval"],
@@ -87,7 +100,7 @@ def run_rag_pipeline(query: str, user_id: str = "anonymous") -> dict:
 
         context = assemble_context(chunks)
 
-        answer = generate_answer(query, context)
+        answer = generate_answer(query, context, prompt_version=prompt_version)
 
     langfuse.update_current_span(
         output={"answer_length": len(answer), "chunks_used": len(chunks)}
@@ -97,4 +110,5 @@ def run_rag_pipeline(query: str, user_id: str = "anonymous") -> dict:
         "answer": answer,
         "sources": [c["id"] for c in chunks],
         "chunks_retrieved": len(chunks),
+        "trace_id": langfuse.get_current_trace_id(),
     }

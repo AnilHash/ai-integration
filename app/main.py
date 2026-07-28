@@ -35,8 +35,12 @@ async def query_endpoint(
     user_id: str = QueryParam(
         default="anonymous", description="User identifier for cost attribution"
     ),
+    prompt_version: int | None = QueryParam(
+        default=None,
+        description="Force a specific prompt version (1 or 2). Omit to use the production-labelled version.",
+    ),
 ):
-    result = run_rag_pipeline(query=q, user_id=user_id)
+    result = run_rag_pipeline(query=q, user_id=user_id, prompt_version=prompt_version)
     return result
 
 
