@@ -1,16 +1,23 @@
 from datetime import datetime, timedelta, timezone
 import json
 from statistics import mean, median
+import statistics
 
 from dotenv import load_dotenv
-import langfuse
 
 load_dotenv()
+import langfuse
+
+from app.db import get_pool, init_request_log_table
+from score_answer import score_answer
+from scripts.run_prompt_ab_test import two_proportion_z_test
+
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query as QueryParam
 from app.instrumentation import verify_langfuse_connection
 from app.rag_pipeline import run_rag_pipeline
+from app.z_test_means import two_sample_z_test_means
 
 langfuse_client = langfuse.get_client()
 
@@ -23,6 +30,7 @@ async def lifespan(app: FastAPI):
             ""
             "Check env variables."
         )
+    await init_request_log_table()
     yield
 
 
@@ -41,6 +49,25 @@ async def query_endpoint(
     ),
 ):
     result = run_rag_pipeline(query=q, user_id=user_id, prompt_version=prompt_version)
+    scores = score_answer(result["trace_id"], result["answer"])
+
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO request_log
+                (trace_id, user_id, query, query_length, answer_length, cites_source, reasonable_length, prompt_version)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            """,
+            result["trace_id"],
+            user_id,
+            q,
+            len(q),
+            len(result["answer"]),
+            scores["cites_source"],
+            scores["reasonable_length"],
+            str(prompt_version) if prompt_version else "production",
+        )
     return result
 
 
@@ -187,6 +214,56 @@ def ttft_report(limit: int = QueryParam(default=20, ge=1, le=100)):
             mean(r["tpot_ms_per_token"] for r in rows if r["tpot_ms_per_token"]), 1
         ),
         "requests": rows,
+    }
+
+
+@app.get("/admin/drift-report")
+async def drift_report(
+    baseline_n: int = QueryParam(default=50, ge=5),
+    current_n: int = QueryParam(default=50, ge=5),
+):
+    """
+    Compares the earliest `baseline_n` logged requests against the most
+    recent `current_n` - both data drift (query length) and output quality drift (citation rate) in one report.
+    """
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        baseline_rows = await conn.fetch(
+            "SELECT query_length, cites_source FROM request_log ORDER BY created_at ASC LIMIT $1",
+            baseline_n,
+        )
+        current_rows = await conn.fetch(
+            "SELECT query_length, cites_source FROM request_log ORDER BY created_at DESC LIMIT $1",
+            current_n,
+        )
+    if len(baseline_rows) < 5 or len(current_rows) < 5:
+        return {"error": "Not enough data yet - need at least 5 rows in each window."}
+    baseline_lengths = [r["query_length"] for r in baseline_rows]
+    current_lengths = [r["query_length"] for r in current_rows]
+
+    length_z, length_p = two_sample_z_test_means(baseline_lengths, current_lengths)
+
+    baseline_cites = sum(1 for r in baseline_rows if r["cites_source"])
+    current_cites = sum(1 for r in current_rows if r["cites_source"])
+    cite_z, cite_p = two_proportion_z_test(
+        baseline_cites, len(baseline_rows), current_cites, len(current_rows)
+    )
+
+    return {
+        "input_drift": {
+            "baseline_mean_length": round(statistics.mean(baseline_lengths), 1),
+            "current_mean_length": round(statistics.mean(current_lengths), 1),
+            "z": round(length_z, 2),
+            "p": round(length_p, 4),
+            "flagged": length_p < 0.05,
+        },
+        "output_quality_drift": {
+            "baseline_cite_rate": round(baseline_cites / len(baseline_rows), 3),
+            "current_cite_rate": round(current_cites / len(current_rows), 3),
+            "z": round(cite_z, 2),
+            "p": round(cite_p, 4),
+            "flagged": cite_p < 0.05,
+        },
     }
 
 
