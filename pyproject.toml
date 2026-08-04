@@ -16,3 +16,6 @@ build-backend = "hatchling.build"
 
 [tool.build.targets.wheel]
 packages = ["app"]
+
+[tool.uv]
+package = false
