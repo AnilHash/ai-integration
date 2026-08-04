@@ -10,3 +10,9 @@ dependencies = [
     "langfuse==4.14.0",
     "openai>=2.44.0",
 ]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.build.targets.wheel]
+packages = ["app"]

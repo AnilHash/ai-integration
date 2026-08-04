@@ -1,0 +1,54 @@
+[
+  { "id": "in-01", "query": "What is FastAPI?", "expect_in_scope": true },
+  { "id": "in-02", "query": "What does Pydantic do?", "expect_in_scope": true },
+  {
+    "id": "in-03",
+    "query": "How do Docker containers work?",
+    "expect_in_scope": true
+  },
+  {
+    "id": "in-04",
+    "query": "Explain what FastAPI is used for",
+    "expect_in_scope": true
+  },
+  {
+    "id": "in-05",
+    "query": "What is data validation in Pydantic?",
+    "expect_in_scope": true
+  },
+  {
+    "id": "in-06",
+    "query": "What do Docker containers package together?",
+    "expect_in_scope": true
+  },
+  {
+    "id": "oos-01",
+    "query": "What is the capital of France?",
+    "expect_in_scope": false
+  },
+  {
+    "id": "oos-02",
+    "query": "How do I file my taxes this year?",
+    "expect_in_scope": false
+  },
+  {
+    "id": "oos-03",
+    "query": "What's the weather like today?",
+    "expect_in_scope": false
+  },
+  {
+    "id": "oos-04",
+    "query": "Who won the last World Cup?",
+    "expect_in_scope": false
+  },
+  {
+    "id": "oos-05",
+    "query": "What's a good recipe for pasta carbonara?",
+    "expect_in_scope": false
+  },
+  {
+    "id": "oos-06",
+    "query": "How old is the universe?",
+    "expect_in_scope": false
+  }
+]
