@@ -35,6 +35,7 @@ REFUSAL_PATTERNS = [
     r"no (?:information|mention) (?:of|about)",
 ]
 
+
 def cites_source(answer: str) -> bool:
     return bool(CITATION_PATTERN.search(answer))
 
@@ -66,7 +67,7 @@ def evaluate_item(item: dict) -> dict:
 def main():
     golden_set = json.loads(GOLDEN_SET_PATH.read_text())
     results = [evaluate_item(item) for item in golden_set]
-
+    print("Just simple change")
     passed_count = sum(r["passed"] for r in results)
     total = len(results)
     pass_rate = passed_count / total
