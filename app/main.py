@@ -14,7 +14,7 @@ from scripts.run_prompt_ab_test import two_proportion_z_test
 
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Query as QueryParam
+from fastapi import FastAPI, HTTPException, Query as QueryParam
 from app.instrumentation import verify_langfuse_connection
 from app.rag_pipeline import run_rag_pipeline
 from app.z_test_means import two_sample_z_test_means
@@ -48,27 +48,44 @@ async def query_endpoint(
         description="Force a specific prompt version (1 or 2). Omit to use the production-labelled version.",
     ),
 ):
-    result = run_rag_pipeline(query=q, user_id=user_id, prompt_version=prompt_version)
-    scores = score_answer(result["trace_id"], result["answer"])
-
     pool = await get_pool()
-    async with pool.acquire() as conn:
-        await conn.execute(
-            """
-            INSERT INTO request_log
-                (trace_id, user_id, query, query_length, answer_length, cites_source, reasonable_length, prompt_version)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            """,
-            result["trace_id"],
-            user_id,
-            q,
-            len(q),
-            len(result["answer"]),
-            scores["cites_source"],
-            scores["reasonable_length"],
-            str(prompt_version) if prompt_version else "production",
+    try:
+        result = run_rag_pipeline(
+            query=q, user_id=user_id, prompt_version=prompt_version
         )
-    return result
+        scores = score_answer(result["trace_id"], result["answer"])
+
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO request_log
+                    (trace_id, user_id, query, query_length, answer_length, cites_source, reasonable_length, prompt_version, is_error)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE)
+                """,
+                result["trace_id"],
+                user_id,
+                q,
+                len(q),
+                len(result["answer"]),
+                scores["cites_source"],
+                scores["reasonable_length"],
+                str(prompt_version) if prompt_version else "production",
+            )
+            return result
+    except Exception as exc:
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO request_log
+                    (user_id, query, query_length, is_error, error_message)
+                VALUES ($1, $2, $3, TRUE, $4)
+                """,
+                user_id,
+                q,
+                len(q),
+                str(exc)[:500],
+            )
+        raise HTTPException(status_code=502, detail="Upstream generation failed")
 
 
 @app.get("/admin/cost-report")
@@ -229,37 +246,66 @@ async def drift_report(
     pool = await get_pool()
     async with pool.acquire() as conn:
         baseline_rows = await conn.fetch(
-            "SELECT query_length, cites_source FROM request_log ORDER BY created_at ASC LIMIT $1",
+            "SELECT query_length, cites_source, is_error FROM request_log ORDER BY created_at ASC LIMIT $1",
             baseline_n,
         )
         current_rows = await conn.fetch(
-            "SELECT query_length, cites_source FROM request_log ORDER BY created_at DESC LIMIT $1",
+            "SELECT query_length, cites_source, is_error FROM request_log ORDER BY created_at DESC LIMIT $1",
             current_n,
         )
     if len(baseline_rows) < 5 or len(current_rows) < 5:
         return {"error": "Not enough data yet - need at least 5 rows in each window."}
-    baseline_lengths = [r["query_length"] for r in baseline_rows]
-    current_lengths = [r["query_length"] for r in current_rows]
+
+    # Error rate uses ALL rows, including failures.
+    baseline_errors = sum(1 for r in baseline_rows if r["is_error"])
+    current_errors = sum(1 for r in current_rows if r["is_error"])
+
+    error_z, error_p = two_proportion_z_test(
+        baseline_errors, len(baseline_rows), current_errors, len(current_rows)
+    )
+    current_error_rate = current_errors / len(current_rows)
+
+    # Input drift and output quality drift are only meaningful on successful requests - a crashed request never got a chance to cite anything, and including it would conflate "broken" with "ungrounded."
+    baseline_ok = [r for r in baseline_rows if not r["is_error"]]
+    current_ok = [r for r in current_rows if not r["is_error"]]
+
+    baseline_lengths = [r["query_length"] for r in baseline_ok]
+    current_lengths = [r["query_length"] for r in current_ok]
 
     length_z, length_p = two_sample_z_test_means(baseline_lengths, current_lengths)
 
-    baseline_cites = sum(1 for r in baseline_rows if r["cites_source"])
-    current_cites = sum(1 for r in current_rows if r["cites_source"])
+    baseline_cites = sum(1 for r in baseline_ok if r["cites_source"])
+    current_cites = sum(1 for r in current_ok if r["cites_source"])
     cite_z, cite_p = two_proportion_z_test(
-        baseline_cites, len(baseline_rows), current_cites, len(current_rows)
+        baseline_cites, len(baseline_ok), current_cites, len(current_ok)
     )
 
     return {
+        "reliability": {
+            "baseline_error_rate": round(baseline_errors / len(baseline_rows), 3),
+            "current_error_rate": round(current_error_rate, 3),
+            "z": round(error_z, 2),
+            "p": round(error_p, 4),
+            "flagged": current_error_rate > 0.05,
+        },
         "input_drift": {
-            "baseline_mean_length": round(statistics.mean(baseline_lengths), 1),
-            "current_mean_length": round(statistics.mean(current_lengths), 1),
+            "baseline_mean_length": round(statistics.mean(baseline_lengths), 1)
+            if baseline_lengths
+            else None,
+            "current_mean_length": round(statistics.mean(current_lengths), 1)
+            if current_lengths
+            else None,
             "z": round(length_z, 2),
             "p": round(length_p, 4),
             "flagged": length_p < 0.05,
         },
         "output_quality_drift": {
-            "baseline_cite_rate": round(baseline_cites / len(baseline_rows), 3),
-            "current_cite_rate": round(current_cites / len(current_rows), 3),
+            "baseline_cite_rate": round(baseline_cites / len(baseline_ok), 3)
+            if baseline_ok
+            else None,
+            "current_cite_rate": round(current_cites / len(current_ok), 3)
+            if current_ok
+            else None,
             "z": round(cite_z, 2),
             "p": round(cite_p, 4),
             "flagged": cite_p < 0.05,

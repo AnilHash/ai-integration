@@ -35,11 +35,11 @@ jobs:
               curl -s http://localhost:11434/api/tags > /dev/null && break
               sleep 1
           done
-          ollama pull qwen2.5:1.5b
+          ollama pull phi3:mini
 
       - name: Run golden set eval
         env:
-          OLLAMA_MODEL: qwen2.5:1.5b
+          OLLAMA_MODEL: phi3:mini
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
