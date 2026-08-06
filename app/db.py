@@ -32,3 +32,12 @@ async def init_request_log_table():
                            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
                 )
                 """)
+        await conn.execute(
+            "ALTER TABLE request_log ALTER COLUMN trace_id DROP NOT NULL"
+        )
+        await conn.execute(
+            "ALTER TABLE request_log ADD COLUMN IF NOT EXISTS is_error BOOLEAN NOT NULL DEFAULT FALSE"
+        )
+        await conn.execute(
+            "ALTER TABLE request_log ADD COLUMN IF NOT EXISTS error_message TEXT"
+        )

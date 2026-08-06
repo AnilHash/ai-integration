@@ -11,12 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          python-version: "3.11"
+          enable-cache: true
 
       - name: Install Python dependencies
-        run: pip install -r requirements.txt
+        run: uv sync --locked
 
       - name: Cache Ollama models
         uses: actions/cache@v4
@@ -34,12 +35,12 @@ jobs:
               curl -s http://localhost:11434/api/tags > /dev/null && break
               sleep 1
           done
-          ollama pull qwen2.5:1.5b
+          ollama pull phi3:mini
 
       - name: Run golden set eval
         env:
-          OLLAMA_MODEL: qwen2.5:1.5b
+          OLLAMA_MODEL: phi3:mini
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
-        run: python eval/run_eval.py
+        run: uv run python -m eval.run_eval

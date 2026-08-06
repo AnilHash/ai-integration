@@ -9,6 +9,7 @@ dependencies = [
     "fastapi[standard]>=0.139.0",
     "langfuse==4.14.0",
     "openai>=2.44.0",
+    "requests>=2.34.2",
 ]
 [build-system]
 requires = ["hatchling"]
@@ -16,3 +17,6 @@ build-backend = "hatchling.build"
 
 [tool.build.targets.wheel]
 packages = ["app"]
+
+[tool.uv]
+package = false
