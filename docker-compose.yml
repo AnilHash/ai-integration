@@ -16,6 +16,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    mem_limit: 512m
+    memswap_limit: 512m
+    volumes:
+      - qdrant_data:/qdrant/storage
 
 volumes:
+  qdrant_data:
   postgres_data:
