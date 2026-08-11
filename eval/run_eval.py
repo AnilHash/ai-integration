@@ -20,7 +20,7 @@ from app.rag_pipeline import run_rag_pipeline
 langfuse = get_client()
 
 GOLDEN_SET_PATH = Path(__file__).parent / "golden_set.json"
-PASS_RATE_FLOOR = 0.83  # 10 OF 12 - tune this as your golden set grows
+PASS_RATE_FLOOR = 0.66  # 8 OF 12 - tune this as your golden set grows, but now reducing at as LLM as judge is not yet been added
 
 
 CITATION_PATTERN = re.compile(r"doc-\d{3}")

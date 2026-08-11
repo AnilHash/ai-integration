@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient
 from app.embeddings import get_embedder
 
 qdrant_client = QdrantClient(url="http://localhost:6333")
-CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", "512"))
+CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", "256"))
 langfuse = get_client()
 
 
