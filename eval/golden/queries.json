@@ -1,0 +1,102 @@
+[
+  {
+    "query": "What's the idiomatic way to instrument Python functions with Langfuse?",
+    "source_doc": "2_1_tracing",
+    "expected_snippet": "without polluting business logic"
+  },
+  {
+    "query": "Why shouldn't I self-host Langfuse v3 on my local dev machine?",
+    "source_doc": "2_1_tracing",
+    "expected_snippet": "will OOM your 8GB machine"
+  },
+  {
+    "query": "Is it fine to call langfuse.flush() after every request in production?",
+    "source_doc": "2_1_tracing",
+    "expected_snippet": "Blocks the response thread. Flush is for tests and scripts only."
+  },
+  {
+    "query": "Do I need a separate tokenizer library to count tokens from my local Ollama calls?",
+    "source_doc": "2_2_cost_dashboards",
+    "expected_snippet": "You never need a separate tokenizer library for this lab"
+  },
+  {
+    "query": "Why log LLM costs to my own Postgres table instead of relying only on Langfuse's UI?",
+    "source_doc": "2_2_cost_dashboards",
+    "expected_snippet": "it doesn't disappear if you ever change observability vendors"
+  },
+  {
+    "query": "Why does time-to-first-token scale with prompt length rather than output length?",
+    "source_doc": "2_3_latency",
+    "expected_snippet": "processing the entire input prompt through the network once, in parallel, before any generation starts"
+  },
+  {
+    "query": "Why is average latency a misleading headline metric for an LLM pipeline?",
+    "source_doc": "2_3_latency",
+    "expected_snippet": "it doesn't tell you whether you have a slow retrieval step, a slow prefill, or a model that's just generating 400 tokens when 80 would do"
+  },
+  {
+    "query": "How does Langfuse decide which prompt version to serve if I don't pass a label?",
+    "source_doc": "2_4_ab_testing",
+    "expected_snippet": "resolves the `production` label by default"
+  },
+  {
+    "query": "Does a non-significant result at n=50 per arm mean two prompt variants perform the same?",
+    "source_doc": "2_4_ab_testing",
+    "expected_snippet": "we don't have enough data to be confident about the direction"
+  },
+  {
+    "query": "Why won't a citation-rate monitor catch concept drift in a RAG system?",
+    "source_doc": "2_5_drift",
+    "expected_snippet": "This is squarely a document-freshness problem, not a prompt or model problem"
+  },
+  {
+    "query": "Why do drift detectors need a minimum effect-size threshold in addition to a p-value?",
+    "source_doc": "2_5_drift",
+    "expected_snippet": "even a trivial, meaningless difference becomes"
+  },
+  {
+    "query": "What's the example scenario used to simulate output quality drift in the lab?",
+    "source_doc": "2_5_drift",
+    "expected_snippet": "someone reverts the `production` label on your `rag-answer` prompt from v2 (citation instruction) back to v1 (baseline)"
+  },
+  {
+    "query": "Why does the CI eval gate use an absolute pass-rate floor instead of a significance test?",
+    "source_doc": "2_6_golden_evals",
+    "expected_snippet": "a significance test at n=12 would be unreliable"
+  },
+  {
+    "query": "Why does the CI pipeline pull its own model instead of assuming one is already available?",
+    "source_doc": "2_6_golden_evals",
+    "expected_snippet": "there's no Ollama instance sitting in GitHub's cloud waiting for you"
+  },
+  {
+    "query": "Why is alerting on every individual slow request a bad idea?",
+    "source_doc": "2_7_alerting",
+    "expected_snippet": "roughly 10% of all requests always sit above the P90 by construction"
+  },
+  {
+    "query": "Which kinds of alerts should wait for business hours instead of paging someone immediately?",
+    "source_doc": "2_7_alerting",
+    "expected_snippet": "Elevated latency, cost creep - degraded, not broken"
+  },
+  {
+    "query": "Why can't the local drift-check script run as a scheduled GitHub Actions job?",
+    "source_doc": "2_7_alerting",
+    "expected_snippet": "only works while YOUR machine + app are running"
+  },
+  {
+    "query": "Can you fix poor HNSW recall just by raising efSearch at query time without rebuilding?",
+    "source_doc": "10_1_vector_db",
+    "expected_snippet": "this is the one you tune at runtime, per query, without rebuilding anything"
+  },
+  {
+    "query": "Why doesn't Qdrant offer an IVF index option?",
+    "source_doc": "10_1_vector_db",
+    "expected_snippet": "Qdrant currently only uses HNSW as a dense vector index"
+  },
+  {
+    "query": "Why do the benchmark's query vectors use a different random seed than the database vectors?",
+    "source_doc": "10_1_vector_db",
+    "expected_snippet": "if a query vector were identical to a database vector, its nearest neighbor would trivially be itself at zero distance, artificially inflating recall"
+  }
+]

@@ -4,7 +4,7 @@ from generate_dataset import generate_clustered_vectors
 client = QdrantClient(url="http://localhost:6333")
 
 COLLECTION = "benchmark_vectors"
-DIM = 384
+DIM = 768
 
 if client.collection_exists(COLLECTION):
     client.delete_collection(COLLECTION)

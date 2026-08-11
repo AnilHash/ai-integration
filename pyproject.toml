@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "asyncpg>=0.31.0",
+    "einops>=0.8.2",
     "faiss-cpu>=1.15.0",
     "fastapi[standard]>=0.139.0",
     "langfuse==4.14.0",
@@ -14,6 +15,8 @@ dependencies = [
     "openai>=2.44.0",
     "qdrant-client>=1.19.0",
     "requests>=2.34.2",
+    "sentence-transformers>=5.7.0",
+    "tiktoken>=0.13.0",
 ]
 [build-system]
 requires = ["hatchling"]
