@@ -1,42 +1,43 @@
+import os
+import sys
 import time
 from langfuse import observe, get_client, propagate_attributes
 from app.llm_client import client, DEFAULT_MODEL
+from qdrant_client import QdrantClient
+from app.embeddings import get_embedder
 
+qdrant_client = QdrantClient(url="http://localhost:6333")
+CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", "512"))
 langfuse = get_client()
 
 
 @observe(name="retrieval")
-def retrieve_documents(query: str) -> list[dict]:
-    time.sleep(0.1)
+def retrieve_documents(query: str, top_k: int = 5) -> list[dict]:
+    vector = get_embedder().encode(f"search_query: {query}").tolist()
+    collection = f"docs_{CHUNK_SIZE}"
+    result = qdrant_client.query_points(
+        collection_name=collection, query=vector, limit=top_k
+    )
 
-    mock_chunks = [
+    chunks = [
         {
-            "id": "doc-001",
-            "text": "FastAPI is a modern, high-performance Python web framework built on Starlette.",
-            "score": 0.91,
-        },
-        {
-            "id": "doc-002",
-            "text": "Pydantic v2 handles data validation using Python type annotations.",
-            "score": 0.87,
-        },
-        {
-            "id": "doc-003",
-            "text": "Docker containers package applications with all their dependencies.",
-            "score": 0.72,
-        },
+            "id": str(point.id),
+            "text": point.payload.get("text", "") if point.payload else "",
+            "score": point.score,
+        }
+        for point in result.points
     ]
 
     langfuse.update_current_span(
-        output=mock_chunks,
+        output=chunks,
         metadata={
-            "num_chunks": str(len(mock_chunks)),
-            "top_score": str(mock_chunks[0]["score"]),
-            "retrieval_backend": "mock_v0",
+            "num_chunks": str(len(chunks)),
+            "top_score": str(chunks[0]["score"]) if chunks else "0",
+            "retrieval_backend": "qdrant",
         },
     )
 
-    return mock_chunks
+    return chunks
 
 
 @observe(name="context_assembly")
@@ -65,8 +66,6 @@ def generate_answer(query: str, context: str, prompt_version: int | None = None)
         prompt = langfuse.get_prompt("rag-answer", label="production")
 
     compiled_prompt = prompt.compile(context=context, query=query)
-
-    print(compiled_prompt)
 
     stream = client.chat.completions.create(
         model=DEFAULT_MODEL,

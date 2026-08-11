@@ -49,6 +49,7 @@ async def query_endpoint(
     ),
 ):
     pool = await get_pool()
+    print(pool)
     try:
         result = run_rag_pipeline(
             query=q, user_id=user_id, prompt_version=prompt_version
@@ -73,6 +74,7 @@ async def query_endpoint(
             )
             return result
     except Exception as exc:
+        print(exc)
         async with pool.acquire() as conn:
             await conn.execute(
                 """

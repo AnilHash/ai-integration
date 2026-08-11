@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from generate_dataset import generate_clustered_vectors, generate_queries
 
-DIM = 384
+DIM = 768
 N_VECTORS = 50000
 N_QUERIES = 1000
 K = 10

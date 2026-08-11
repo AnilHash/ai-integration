@@ -2,7 +2,7 @@ import numpy as np
 
 
 def generate_clustered_vectors(
-    n_vectors: int = 50000, dim: int = 384, n_clusters: int = 50, seed: int = 42
+    n_vectors: int = 50000, dim: int = 768, n_clusters: int = 50, seed: int = 42
 ) -> np.ndarray:
     """
     Synthetic but realistic: vectors scattered around n_clusters centroids, mimicking how real text embeddings cluster around semantic topics. Not real embeddings - that's deliberate, algorithm-structure benchmarking doesn't need real semantic content.
@@ -23,7 +23,7 @@ def generate_clustered_vectors(
 
 
 def generate_queries(
-    n_queries: int = 1000, dim: int = 384, seed: int = 43
+    n_queries: int = 1000, dim: int = 768, seed: int = 43
 ) -> np.ndarray:
     """
     Held-out query vectors, same distribution, generated independently.
