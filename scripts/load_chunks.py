@@ -52,8 +52,9 @@ def build_collection(size: int, docs: list[tuple[str, str]]):
 def main():
     docs = load_corpus()
     print(f"Loaded {len(docs)} source documents from {CORPUS_DIR}/")
-    for size in CHUNK_SIZES:
-        build_collection(size, docs)
+    build_collection(256, docs)
+    # for size in CHUNK_SIZES:
+    #     build_collection(size, docs)
 
 
 if __name__ == "__main__":

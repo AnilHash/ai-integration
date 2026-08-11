@@ -53,6 +53,7 @@ jobs:
         run: uv run python -m scripts.load_chunks
 
       - name: Run golden set eval
+        timeout-minutes: 45
         env:
           OLLAMA_MODEL: phi3:mini
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
