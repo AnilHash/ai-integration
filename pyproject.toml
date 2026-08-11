@@ -6,9 +6,13 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "asyncpg>=0.31.0",
+    "faiss-cpu>=1.15.0",
     "fastapi[standard]>=0.139.0",
     "langfuse==4.14.0",
+    "matplotlib>=3.11.1",
+    "numpy>=2.5.1",
     "openai>=2.44.0",
+    "qdrant-client>=1.19.0",
     "requests>=2.34.2",
 ]
 [build-system]
