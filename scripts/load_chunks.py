@@ -35,7 +35,7 @@ def build_collection(size: int, docs: list[tuple[str, str]]):
     points, point_id = [], 0
     for doc_id, text in docs:
         for chunk in chunk_text(text, size):
-            vector = model.encode(f"search_query: {chunk}").tolist()
+            vector = model.encode(f"search_document: {chunk}").tolist()
             points.append(
                 models.PointStruct(
                     id=point_id,

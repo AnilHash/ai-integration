@@ -8,6 +8,16 @@ jobs:
   golden-set-eval:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/healthz || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -36,6 +46,9 @@ jobs:
               sleep 1
           done
           ollama pull phi3:mini
+
+      - name: Seed Qdrant with golden-set corpus
+        run: uv run python -m scripts.load_chunks
 
       - name: Run golden set eval
         env:

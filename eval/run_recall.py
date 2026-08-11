@@ -27,7 +27,7 @@ def evaluate(chunk_size: int, golden_set: list[dict]) -> dict:
     hits_found, reciprocal_ranks, ndcgs = 0, [], []
 
     for item in golden_set:
-        vector = model.encode(f"search_document: {item['query']}").tolist()
+        vector = model.encode(f"search_query: {item['query']}").tolist()
         result = client.query_points(collection_name=collection, query=vector, limit=K)
         rank = find_rank(result.points, item["expected_snippet"], item["source_doc"])
 
