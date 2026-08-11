@@ -12,7 +12,7 @@ langfuse = get_client()
 
 
 @observe(name="retrieval")
-def retrieve_documents(query: str, top_k: int = 5) -> list[dict]:
+def retrieve_documents(query: str, top_k: int = 1) -> list[dict]:
     vector = get_embedder().encode(f"search_query: {query}").tolist()
     collection = f"docs_{CHUNK_SIZE}"
     result = qdrant_client.query_points(
