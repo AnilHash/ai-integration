@@ -1,10 +1,8 @@
 import os
-import sys
-import time
 from langfuse import observe, get_client, propagate_attributes
+from app.hybrid_retrieval import hybrid_search, chunk_lookup
 from app.llm_client import client, DEFAULT_MODEL
 from qdrant_client import QdrantClient
-from app.embeddings import get_embedder
 
 qdrant_client = QdrantClient(url="http://localhost:6333")
 CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", "256"))
@@ -12,20 +10,21 @@ langfuse = get_client()
 
 
 @observe(name="retrieval")
-def retrieve_documents(query: str, top_k: int = 1) -> list[dict]:
-    vector = get_embedder().encode(f"search_query: {query}").tolist()
-    collection = f"docs_{CHUNK_SIZE}"
-    result = qdrant_client.query_points(
-        collection_name=collection, query=vector, limit=top_k
-    )
+def retrieve_documents(query: str, top_k: int = 5) -> list[dict]:
+    # vector = get_embedder().encode(f"search_query: {query}").tolist()
+    # collection = f"docs_{CHUNK_SIZE}"
+    # result = qdrant_client.query_points(
+    #     collection_name=collection, query=vector, limit=top_k
+    # )
+    result = hybrid_search(query, fuse_k=20, final_k=top_k)
 
     chunks = [
         {
-            "id": str(point.id),
-            "text": point.payload.get("text", "") if point.payload else "",
-            "score": point.score,
+            "id": str(item["id"]),
+            "text": chunk_lookup.get(item["id"], ""),
+            "score": item["score"],
         }
-        for point in result.points
+        for item in result
     ]
 
     langfuse.update_current_span(
@@ -33,7 +32,7 @@ def retrieve_documents(query: str, top_k: int = 1) -> list[dict]:
         metadata={
             "num_chunks": str(len(chunks)),
             "top_score": str(chunks[0]["score"]) if chunks else "0",
-            "retrieval_backend": "qdrant",
+            "retrieval_backend": "hybrid_search",
         },
     )
 
