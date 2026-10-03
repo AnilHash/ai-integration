@@ -1,0 +1,5 @@
+With real numbers in hand — throughput gain from Part D, quality delta (and its significance) from Part E — answer this honestly rather than assuming quantization is automatically worth it:
+
+Did you actually need the VRAM back? Phi-3 mini already fits comfortably in a T4's 16GB at fp16. If nothing was VRAM-constrained before quantizing, the throughput gain is solving a problem you didn't have, at a quality cost you did pay.
+Was the quality drop statistically significant, and does it land on a task category your use case cares about? A significant drop concentrated in, say, formal-logic or abstract-algebra-style MMLU categories matters a lot less for a documentation-RAG assistant than a drop in reading-comprehension-style categories would.
+Was there a simpler alternative? gemma2:2b at full fp16 is already smaller than Phi-3 mini quantized to int4 might end up being, without paying any quantization-specific error at all. "Quantize the bigger model" and "just use the smaller model" are two different trades — today's numbers let you compare them honestly instead of assuming the quantized route is automatically better because it sounds more sophisticated.
