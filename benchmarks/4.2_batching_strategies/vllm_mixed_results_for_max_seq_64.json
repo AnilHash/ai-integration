@@ -1,0 +1,30 @@
+[
+  {
+    "concurrency": 1,
+    "throughput_tokens_per_sec": 23.0103025049173,
+    "p50_latency_s": 0.8957731300006344,
+    "p95_latency_s": 8.657399638999777,
+    "engine": "vllm-mixed-64"
+  },
+  {
+    "concurrency": 4,
+    "throughput_tokens_per_sec": 54.84197282429458,
+    "p50_latency_s": 1.4503221599998142,
+    "p95_latency_s": 13.44826729200031,
+    "engine": "vllm-mixed-64"
+  },
+  {
+    "concurrency": 8,
+    "throughput_tokens_per_sec": 68.57251190866202,
+    "p50_latency_s": 2.0314646350007024,
+    "p95_latency_s": 15.471843557000284,
+    "engine": "vllm-mixed-64"
+  },
+  {
+    "concurrency": 16,
+    "throughput_tokens_per_sec": 73.71378739545199,
+    "p50_latency_s": 2.923614907999763,
+    "p95_latency_s": 16.31475159999991,
+    "engine": "vllm-mixed-64"
+  }
+]
