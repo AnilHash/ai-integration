@@ -8,12 +8,12 @@ from app.embeddings import get_embedder
 
 qdrant_client = QdrantClient(url="http://localhost:6333")
 CHUNK_SIZE = int(os.getenv("RETRIEVAL_CHUNK_SIZE", 256))
-COLLECTION = f"docs_{CHUNK_SIZE}"
+COLLECTION = f"docs_active"
 
 
 def load_chunks_from_qdrant(
     collection: str,
-) -> tuple[list[int], list[str], dict[int, dict]]:
+) -> tuple[list[str], list[str], dict[str, dict]]:
     """
     Single source of truth - BM25's chunk IDs and Qdrant's point IDs can never drift apart because they're pulled from the same collection.
     """
@@ -39,27 +39,27 @@ bm25_index = bm25s.BM25()
 bm25_index.index(bm25s.tokenize(chunk_texts, stopwords="en"))
 
 
-def dense_search(query: str, k: int = 20) -> list[tuple[int, float]]:
+def dense_search(query: str, k: int = 20) -> list[tuple[str, float]]:
     vector = get_embedder().encode(f"search_query: {query}").tolist()
     result = qdrant_client.query_points(
         collection_name=COLLECTION, query=vector, limit=k
     )
-    return [(int(point.id), point.score) for point in result.points]
+    return [(str(point.id), point.score) for point in result.points]
 
 
-def bm25_search(query: str, k: int = 20) -> list[tuple[int, float]]:
+def bm25_search(query: str, k: int = 20) -> list[tuple[str, float]]:
     query_tokens = bm25s.tokenize(query, stopwords="en")
     results, scores = bm25_index.retrieve(query_tokens, corpus=chunk_ids, k=k)
-    return list(zip(results[0], scores[0]))
+    return [(str(cid), float(s)) for cid, s in zip(results[0], scores[0])]
 
 
 def reciprocal_rank_fusion(
-    *ranked_lists: list[tuple[int, float]], k: int = 60
-) -> list[tuple[int, float]]:
+    *ranked_lists: list[tuple[str, float]], k: int = 60
+) -> list[tuple[str, float]]:
     """
     Fuses on RANK, not raw score -- this is what lets a BM25 term-weighted sum and a Qdrant cosine similarity combine meaningfully despite living on completely different scales. k=60 is the constant from the original RRF paper; it dampens the impact of any single ranker's rank-1 pick.
     """
-    fused: dict[int, float] = {}
+    fused: dict[str, float] = {}
     for ranked_list in ranked_lists:
         for rank, (chunk_id, _score) in enumerate(ranked_list, start=1):
             fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (k + rank)
@@ -70,11 +70,11 @@ reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
 
 
 class RankedChunk(TypedDict):
-    id: int
+    id: str
     score: float
 
 
-def rerank(query: str, candidate_ids: list[int], top_k: int = 5) -> list[RankedChunk]:
+def rerank(query: str, candidate_ids: list[str], top_k: int = 5) -> list[RankedChunk]:
     """
     Cross-encoders take (query, document) PAIRS -- they never embed a single text alone. Only call this on the bounded candidate pool from RRF, never the whole corpus.
     """

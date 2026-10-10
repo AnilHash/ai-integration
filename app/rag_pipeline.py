@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+
+load_dotenv()
 import os
 from langfuse import observe, get_client, propagate_attributes
 from app.hybrid_retrieval import hybrid_search, chunk_lookup
@@ -16,7 +19,7 @@ def retrieve_documents(query: str, top_k: int = 5) -> list[dict]:
     # result = qdrant_client.query_points(
     #     collection_name=collection, query=vector, limit=top_k
     # )
-    result = hybrid_search(query, fuse_k=20, final_k=top_k)
+    result = hybrid_search(query, fuse_k=50, final_k=top_k)
 
     chunks = [
         {
@@ -107,6 +110,7 @@ def run_rag_pipeline(
         "query": query,
         "answer": answer,
         "sources": [c["id"] for c in chunks],
+        "context": context,
         "chunks_retrieved": len(chunks),
         "trace_id": langfuse.get_current_trace_id(),
     }

@@ -23,7 +23,7 @@ def add_document(path: Path):
         points.append(
             models.PointStruct(
                 id=stable_chunk_id(doc_id, i),
-                vector=embedder.encode(chunk).tolist(),
+                vector=embedder.encode(f"search_document:{chunk}").tolist(),
                 payload={"source_doc": doc_id, "text": chunk, "chunk_size": CHUNK_SIZE},
             )
         )

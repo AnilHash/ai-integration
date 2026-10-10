@@ -2,10 +2,12 @@ from pathlib import Path
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
 from chunking.chunker import chunk_text
+from chunking.stable_ids import stable_chunk_id
 
 
 CORPUS_DIR = Path("corpus")
-CHUNK_SIZES = [256, 512, 1024]
+CHUNK_SIZES = [256]
+# CHUNK_SIZES = [256, 512, 1024]
 DIM = 768
 
 client = QdrantClient(url="http://localhost:6333")
@@ -19,7 +21,7 @@ def load_corpus() -> list[tuple[str, str]]:
 
 
 def build_collection(size: int, docs: list[tuple[str, str]]):
-    collection = f"docs_{size}"
+    collection = f"docs_active"
     if client.collection_exists(collection):
         client.delete_collection(collection)
 
@@ -32,18 +34,17 @@ def build_collection(size: int, docs: list[tuple[str, str]]):
         ),
     )
 
-    points, point_id = [], 0
+    points = []
     for doc_id, text in docs:
-        for chunk in chunk_text(text, size):
+        for i, chunk in enumerate(chunk_text(text, size)):
             vector = model.encode(f"search_document: {chunk}").tolist()
             points.append(
                 models.PointStruct(
-                    id=point_id,
+                    id=stable_chunk_id(doc_id, i),
                     vector=vector,
                     payload={"source_doc": doc_id, "text": chunk, "chunk_size": size},
                 )
             )
-            point_id += 1
 
     client.upsert(collection_name=collection, points=points)
     print(f"{collection}:{len(points)} chunks loaded")
@@ -52,6 +53,7 @@ def build_collection(size: int, docs: list[tuple[str, str]]):
 def main():
     docs = load_corpus()
     print(f"Loaded {len(docs)} source documents from {CORPUS_DIR}/")
+    print("docs signature---->>>", docs[0][0], len(docs[0][1]))
     build_collection(256, docs)
     # for size in CHUNK_SIZES:
     #     build_collection(size, docs)
