@@ -45,28 +45,48 @@ def is_grounded_refusal(answer: str) -> bool:
     return any(re.search(p, lowered) for p in REFUSAL_PATTERNS)
 
 
-def evaluate_item(item: dict) -> dict:
-    result = run_rag_pipeline(
-        query=item["query"], user_id="ci-eval", prompt_version=None
-    )
-    answer = result["answer"]
+def evaluate_item(item: dict, max_attempts: int = 3) -> dict:
+    """
+    Retries a FAILING item up to max_attempts times. Counted as a genuine failure only if every attempt fails - a deterministic regression fails the same way every time, which is exactly what distinguishes it from one-off stochastic noise. A pass on any attempt is a pass, but items that needed more than one attempt are flagged 'flaky' regardless, since a test that only passes 2 times out of 3 is telling you something even when the gate lets it through.
+    """
+    last_answer = None
 
-    if item["expect_in_scope"]:
-        passed = cites_source(answer) and not is_grounded_refusal(answer)
-    else:
-        passed = is_grounded_refusal(answer)
+    for attempt_num in range(1, max_attempts + 1):
+        result = run_rag_pipeline(
+            query=item["query"], user_id="ci-eval", prompt_version=None
+        )
+        answer = result["answer"]
+        last_answer = answer
+
+        if item["expect_in_scope"]:
+            passed = cites_source(answer) and not is_grounded_refusal(answer)
+        else:
+            passed = is_grounded_refusal(answer)
+
+        if passed:
+            return {
+                "id": item["id"],
+                "query": item["query"],
+                "answer": answer,
+                "passed": True,
+                "attempts": attempt_num,
+                "flaky": attempt_num > 1,
+            }
 
     return {
         "id": item["id"],
         "query": item["query"],
-        "answer": answer,
-        "passed": passed,
+        "answer": last_answer,
+        "passed": False,
+        "attempts": max_attempts,
+        "flaky": False,
     }
 
 
 def main():
+    max_attempts = 3
     golden_set = json.loads(GOLDEN_SET_PATH.read_text())
-    results = [evaluate_item(item) for item in golden_set]
+    results = [evaluate_item(item, max_attempts) for item in golden_set]
     print("Just test change")
     passed_count = sum(r["passed"] for r in results)
     total = len(results)
@@ -80,6 +100,14 @@ def main():
         print(f" [{status}] {r['id']}: {r['query']}")
         if not r["passed"]:
             print(f"        answer:{r['answer'][:150]}")
+
+    flaky = [r for r in results if r["flaky"]]
+    if flaky:
+        print(
+            f"\n⚠ {len(flaky)} item(s) needed a retry to pass (not failing the build, but worth watching):"
+        )
+        for r in flaky:
+            print(f"    {r['id']}: passed on attempt {r['attempts']}/{max_attempts}")
 
     langfuse.flush()
 

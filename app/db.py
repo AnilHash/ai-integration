@@ -41,3 +41,45 @@ async def init_request_log_table():
         await conn.execute(
             "ALTER TABLE request_log ADD COLUMN IF NOT EXISTS error_message TEXT"
         )
+
+
+async def init_eval_tables():
+
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+                CREATE TABLE IF NOT EXISTS eval_runs (
+                           id SERIAL PRIMARY KEY,
+                           run_id UUID NOT NULL UNIQUE,
+                           dataset_version TEXT NOT NULL,
+                           generator_model TEXT NOT NULL,
+                           judge_model TEXT NOT NULL,
+                           total_items INT NOT NULL,
+                           heuristic_pass_rate REAL,
+                           retrieval_recall_at_5 REAL,
+                           retrieval_mrr REAL,
+                           retrieval_ndcg_at_5 REAL,
+                           judge_pass_rate REAL,
+                           started_at TIMESTAMPTZ NOT NULL,
+                           finished_at TIMESTAMPTZ,
+                           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                           )
+            """)
+        await conn.execute("""
+                CREATE TABLE IF NOT EXISTS eval_results (
+                           id SERIAL PRIMARY KEY,
+                           run_id UUID NOT NULL REFERENCES eval_runs(run_id),
+                           item_id TEXT NOT NULL,
+                           category TEXT NOT NULL,
+                           heuristic_cites_source BOOLEAN,
+                           heuristic_grounded_refusal BOOLEAN,
+                           retrieval_rank INT,
+                           judge_faithful BOOLEAN,
+                           judge_relevant BOOLEAN,
+                           judge_complete BOOLEAN,
+                           latency_ms INT,
+                           raw_answer TEXT,
+                           error TEXT,
+                           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                           )
+            """)

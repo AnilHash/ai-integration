@@ -67,7 +67,7 @@ def judge_answer(
     )
     raw = resp.choices[0].message.content
     if raw is None:
-        return 0
+        raise ValueError("Judge returned empty content")
     try:
         return JudgeVerdict.model_validate_json(raw)
     except Exception as e:

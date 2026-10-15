@@ -1,0 +1,97 @@
+[
+  {
+    "id": "in-06",
+    "query": "What is the difference between a span and a generation in Langfuse?",
+    "category": "in-scope",
+    "expect_in_scope": true,
+    "retrieval": {
+      "source_doc": "2_1_tracing",
+      "expected_snippet": "A span specifically for LLM calls"
+    },
+    "reference_answer": "A span is a unit of non-LLM work inside a trace (retrieval, reranking, chunking). A generation is a span specifically for LLM calls and adds LLM-specific fields such as model, token usage, cost, completionStartTime (for TTFT) and a link to a versioned prompt.",
+    "tiers_applicable": ["heuristic", "retrieval", "judge"]
+  },
+  {
+    "id": "in-07",
+    "query": "How does Langfuse know that retrieve_documents() and generate_answer() belong to the same trace?",
+    "category": "in-scope",
+    "expect_in_scope": true,
+    "retrieval": {
+      "source_doc": "2_1_tracing",
+      "expected_snippet": "the SDK propagates the trace context automatically through the call stack"
+    },
+    "reference_answer": "Langfuse uses Python's contextvars, so the @observe decorator reads the current context on entry. If a parent exists it creates a linked child span; otherwise it starts a new root trace. No correlation ID has to be passed through every function by hand.",
+    "tiers_applicable": ["heuristic", "retrieval", "judge"]
+  },
+  {
+    "id": "in-08",
+    "query": "How many traces should one HTTP request create?",
+    "category": "in-scope",
+    "expect_in_scope": true,
+    "retrieval": {
+      "source_doc": "2_1_tracing",
+      "expected_snippet": "One HTTP request → one trace. Always."
+    },
+    "reference_answer": "Exactly one. One HTTP request maps to one trace, and the individual steps (retrieval, context assembly, LLM call) become nested spans or generations inside it. Two traces for one request should never be created.",
+    "tiers_applicable": ["heuristic", "retrieval", "judge"]
+  },
+  {
+    "id": "in-09",
+    "query": "Why does load_dotenv() have to run before any app module is imported?",
+    "category": "in-scope",
+    "expect_in_scope": true,
+    "retrieval": {
+      "source_doc": "2_1_tracing",
+      "expected_snippet": "is a singleton that reads"
+    },
+    "reference_answer": "Langfuse's get_client() is a singleton that reads its credentials from the environment the first time it is called, which can happen at import time. FastAPI/uvicorn does not auto-load .env, so if an app module is imported first the client initializes with empty credentials and tracing silently stays disabled.",
+    "tiers_applicable": ["heuristic", "retrieval", "judge"]
+  },
+  {
+    "id": "in-10",
+    "query": "Where do token counts come from when tracking the cost of an LLM call?",
+    "category": "in-scope",
+    "expect_in_scope": true,
+    "retrieval": {
+      "source_doc": "2_2_cost_dashboards",
+      "expected_snippet": "the number comes from the response, not from counting characters yourself"
+    },
+    "reference_answer": "They come straight from the model server's response. Each chat completion carries a usage object with prompt_tokens, completion_tokens and total_tokens, so no separate tokenizer or character counting is needed (for streaming, usage requires stream_options include_usage and appears only in the final chunk).",
+    "tiers_applicable": ["heuristic", "retrieval", "judge"]
+  },
+  {
+    "id": "oos-06",
+    "query": "How old is the universe?",
+    "category": "out-of-scope",
+    "expect_in_scope": false,
+    "tiers_applicable": ["heuristic"]
+  },
+  {
+    "id": "oos-07",
+    "query": "Who wrote the novel Pride and Prejudice?",
+    "category": "out-of-scope",
+    "expect_in_scope": false,
+    "tiers_applicable": ["heuristic"]
+  },
+  {
+    "id": "oos-08",
+    "query": "What are the symptoms of the flu?",
+    "category": "out-of-scope",
+    "expect_in_scope": false,
+    "tiers_applicable": ["heuristic"]
+  },
+  {
+    "id": "oos-09",
+    "query": "Can you write me a short poem about the ocean?",
+    "category": "out-of-scope",
+    "expect_in_scope": false,
+    "tiers_applicable": ["heuristic"]
+  },
+  {
+    "id": "oos-10",
+    "query": "What's the current price of Bitcoin?",
+    "category": "out-of-scope",
+    "expect_in_scope": false,
+    "tiers_applicable": ["heuristic"]
+  }
+]
