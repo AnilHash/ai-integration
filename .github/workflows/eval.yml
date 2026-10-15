@@ -7,7 +7,7 @@ on:
 jobs:
   golden-set-eval:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     services:
       qdrant:
         image: qdrant/qdrant:latest
@@ -35,22 +35,23 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ollama/models
-          key: ollama-gemma2.2b
+          key: ollama-gemma2:2b
 
       - name: Install Ollama
         run: curl -fsSL https://ollama.com/install.sh | sh
 
       - name: Start Ollama and pull model
+        env:
+          OLLAMA_MODELS: ${{ github.workspace }}/.ollama-models
         run: |
-          ollama serve &
+          sudo systemctl stop ollama || true
+          ollama serve > ollama.log 2>&1 &
           for i in $(seq 1 30); do
               curl -s http://localhost:11434/api/tags > /dev/null && break
               sleep 1
           done
-          ollama pull gemma2.2b
-
-      - name: Seed Qdrant with golden-set corpus
-        run: uv run python -m scripts.load_chunks
+          ollama pull gemma2:2b
+          ollama list
       
       - name: Ingest CI corpus into Qdrant
         run: uv run python -m eval.ci_ingest
@@ -58,7 +59,7 @@ jobs:
       - name: Run golden set eval
         timeout-minutes: 45
         env:
-          OLLAMA_MODEL: gemma2.2b
+          OLLAMA_MODEL: gemma2:2b
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
