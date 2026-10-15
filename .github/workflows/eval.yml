@@ -51,6 +51,9 @@ jobs:
 
       - name: Seed Qdrant with golden-set corpus
         run: uv run python -m scripts.load_chunks
+      
+      - name: Ingest CI corpus into Qdrant
+        run: uv run python -m eval.ci_ingest
 
       - name: Run golden set eval
         timeout-minutes: 45
@@ -60,3 +63,6 @@ jobs:
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
         run: uv run python -m eval.run_eval
+
+      - name: Run Recall@5 gate
+        run: uv run python -m eval.ci_recall_gate

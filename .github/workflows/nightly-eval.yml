@@ -1,0 +1,66 @@
+# .github/workflows/nightly-eval.yml
+name: Nightly Deep Eval
+
+on:
+  schedule:
+    - cron: "0 3 * * *"       # 3am UTC daily
+  workflow_dispatch: {}         # allow manual trigger too
+
+jobs:
+  deep-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+      postgres:                       # ephemeral -- exists only for this job, see "CI Has No Memory"
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: eval_ci
+          POSTGRES_DB: eval_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install dependencies
+        run: uv pip install --system -r requirements.txt
+
+      - name: Install Ollama, pull both models
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          for i in $(seq 1 30); do curl -s http://localhost:11434/api/tags > /dev/null && break; sleep 1; done
+          ollama pull qwen2.5:1.5b
+          ollama pull gemma2:2b
+
+      - name: Ingest CI corpus
+        run: uv run python eval/ci_ingest.py
+
+      - name: Run full 50-item 3-tier harness
+        env:
+          OLLAMA_MODEL: qwen2.5:1.5b
+          EVAL_JUDGE_MODEL: gemma2:2b        # distinct from generator -- Part E
+          DATABASE_URL: postgresql://postgres:eval_ci@localhost:5432/eval_ci
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+        run: uv run python eval/harness.py
+
+      - name: Check for regression against committed baseline
+        env:
+          DATABASE_URL: postgresql://postgres:eval_ci@localhost:5432/eval_ci
+        run: uv run python eval/check_regression.py

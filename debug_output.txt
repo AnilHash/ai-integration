@@ -1,0 +1,101 @@
+Split strings:   0%|          | 0/254 [00:00<?, ?it/s]                                                      BM25S Count Tokens:   0%|          | 0/254 [00:00<?, ?it/s]                                                           BM25S Compute Scores:   0%|          | 0/254 [00:00<?, ?it/s]                                                             Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|##########| 105/105 [00:00<00:00, 1433.44it/s]
+<All keys matched successfully>
+[transformers] Detected the usage of `get_extended_attention_mask`: This function is deprecated and will be removed in v5.12.0. Please use the new API in `transformers.masking_utils`
+======================================================================
+in-06 ['heuristic', 'retrieval', 'judge'] in_scope = True
+Q: What is the difference between a span and a generation in Langfuse?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: The root container for one user interaction is called a trace. It carries fields such as `id` (a unique ID auto-generated or set by the user), `name` (what operation this represents), and more.
+
+In the context provided, the function `generate_answer` calls the LLM without needing any manual instrume
+cites_source: False | refusal: False
+expected doc    : '2_1_tracing'
+expected snippet: 'A span specifically for LLM calls'
+  #1 id='f12ff19f-1324-550a-9133-1738cc0df82a' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #2 id='69e8f659-681e-5d99-bbc8-3b4e7396e68e' doc='2_3_latency' doc_match=False exact=False normalized=False
+  #3 id='d860b4e0-7a66-5dfe-9fae-c87d4a2f2c5b' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #4 id='c98dae2a-86e2-598d-8fc4-8814e900d55e' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #5 id='a45fcada-7417-5a58-9859-a961a3abd19d' doc='2_1_tracing' doc_match=True exact=False normalized=False
+rank: None
+judge: {'faithful': False, 'relevant': True, 'complete': True, 'reasoning': "The core concepts and details provided by the student are relevant to understanding the difference between a span and generation in LangFuse. However, there is an error in their explanation of what constitutes a trace within LangFuse's context as they incorrectly refer to it as 'the root container for one user interaction.' In fact, according to the retrieved source information provided by [Source:d860b4e0-7a66-5dfe-9fae-c87d4a2f2c5b], a trace is not just about request correlation but also includes fields like `name` and potentially others that are relevant to the user's interaction. The student correctly identifies that generation inherits metadata from parent observations, which aligns with [Source:69e8f659-681e-5d99-bbc8-3b4e7396e68e]. However, they fail to mention the specific fields added by LangFuse for generation such as `model`, `token usage` and latency details. Additionally, there is no explicit discussion about how a span differs from a generation in terms of functionality or purpose within this context."}
+======================================================================
+in-07 ['heuristic', 'retrieval', 'judge'] in_scope = True
+Q: How does Langfuse know that retrieve_documents() and generate_answer() belong to the same trace?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: Langfuse knows that `retrieve_documents()` and `generate_answer()` belong to the same trace by using the `@observe` decorator. This decorator automatically propagates context variables through function calls, ensuring that all functions within a chain of operations share the same trace ID. In this c
+cites_source: False | refusal: False
+expected doc    : '2_1_tracing'
+expected snippet: 'the SDK propagates the trace context automatically through the call stack'
+  #1 id='2606dc26-c40b-5780-ba0f-643e30c363e5' doc='2_1_tracing' doc_match=True exact=True normalized=True
+  #2 id='42a7b26c-ff1c-5fac-9c18-8ab666b79ea2' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #3 id='119fca07-6ff4-5a8b-83a9-16b79b59e1a7' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #4 id='0833f82a-e450-57b7-b4c8-2910f3798b1f' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #5 id='305f3e64-bb12-55b2-9f06-6e723bd4df7b' doc='2_1_tracing' doc_match=True exact=False normalized=False
+rank: 1
+judge: {'faithful': False, 'relevant': True, 'complete': False, 'reasoning': "The candidate answer correctly identifies that Langfuse uses Python's contextvars and the @observe decorator to propagate context variables through function calls. However, it fails in providing a detailed explanation of how `retrieve_documents()` and `generate_answer()` are linked under one trace ID by using child spans created when entering the pipeline with `@observe`. The candidate answer also lacks specific details about reading current context on entry, creating linked child span or root trace as per @observe decorator's behavior. It does not mention how cost is calculated and propagated through these functions which was a part of source context."}
+======================================================================
+in-08 ['heuristic', 'retrieval', 'judge'] in_scope = True
+Q: How many traces should one HTTP request create?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: One HTTP request should always create exactly one top-level trace, with each trace named `"rag_query"`. This ensures that every step within the LLM pipeline is accounted for and can be inspected through Langfuse.
+cites_source: False | refusal: False
+expected doc    : '2_1_tracing'
+expected snippet: 'One HTTP request â†’ one trace. Always.'
+  #1 id='b9c0db75-0185-5bbe-ab05-22f2ee8836cb' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #2 id='3a162feb-3cb7-54bd-b13e-06af74825c1f' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #3 id='5fe55f9d-8da9-5efc-9b49-15fa17f86c7d' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #4 id='b036d99d-ee78-5fd1-aaaa-4c0b02409123' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #5 id='822ba5ce-f068-573c-88cd-760cd7e1ec54' doc='2_1_tracing' doc_match=True exact=False normalized=False
+rank: None
+judge: {'faithful': False, 'relevant': True, 'complete': True, 'reasoning': 'The provided answer does not fully adhere to all three grading criteria outlined in the schema. While it correctly states that one HTTP request should create exactly one top-level trace and names this trace as `'}
+======================================================================
+in-09 ['heuristic', 'retrieval', 'judge'] in_scope = True
+Q: Why does load_dotenv() have to run before any app module is imported?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: Load_dotenv() must run before any app module is imported because it initializes the environment variables that are used by subsequent modules, ensuring they can access and utilize the correct credentials for Langfuse. This step ensures that the client's initialization happens with valid configuratio
+cites_source: False | refusal: False
+expected doc    : '2_1_tracing'
+expected snippet: 'is a singleton that reads'
+  #1 id='eaad8951-bbd1-5323-a3c1-1ad0bd8796db' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #2 id='39d2d943-5424-557d-8e27-4e708274f244' doc='2_1_tracing' doc_match=True exact=False normalized=False
+  #3 id='f6a3301e-4d4c-56b3-9888-c4e26486d2ff' doc='2_2_cost_dashboards' doc_match=False exact=False normalized=False
+  #4 id='21c91138-28f1-5b22-8eec-dcfb6610699a' doc='2_2_cost_dashboards' doc_match=False exact=False normalized=False
+  #5 id='09675951-e69f-5d6e-aefd-d93aa8588804' doc='2_3_latency' doc_match=False exact=False normalized=False
+rank: None
+judge: {'faithful': True, 'relevant': True, 'complete': False, 'reasoning': "The provided answer touches on some relevant points but lacks specificity and completeness regarding why `load_dotenv()` must run before any app module is imported. It does not directly address the consequences of calling Langfuse's get_client() without first loading environment variables, nor how this affects tracing in FastAPI/uvicorn applications."}
+======================================================================
+in-10 ['heuristic', 'retrieval', 'judge'] in_scope = True
+Q: Where do token counts come from when tracking the cost of an LLM call?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: Token counts come directly from the response object, which includes `prompt_tokens`, `completion_tokens`, and `total_tokens`. This information is provided by the model server and does not require a separate tokenizer library.
+cites_source: False | refusal: False
+expected doc    : '2_2_cost_dashboards'
+expected snippet: 'the number comes from the response, not from counting characters yourself'
+  #1 id='6b735085-17e8-506e-a59c-5b97ca24ecbf' doc='2_2_cost_dashboards' doc_match=True exact=False normalized=False
+  #2 id='d56e08c9-c71d-5498-b78b-6d1a34ec255f' doc='2_2_cost_dashboards' doc_match=True exact=False normalized=False
+  #3 id='2e3fd573-cf46-5e5a-bb51-7b38ab9c657c' doc='2_2_cost_dashboards' doc_match=True exact=False normalized=False
+  #4 id='5c172b31-159a-5c6f-a59a-6344c5fbc872' doc='2_2_cost_dashboards' doc_match=True exact=True normalized=True
+  #5 id='20d31813-651d-52a3-962f-252e19cc90e1' doc='2_2_cost_dashboards' doc_match=True exact=False normalized=False
+rank: 4
+judge: {'faithful': True, 'relevant': True, 'complete': False, 'reasoning': "The reference answer directly addresses where token counts come from when tracking LLM costs by stating that they are provided straight from the model server's response. This includes `prompt_tokens`, `completion_tokens`, and `total_tokens`. The candidate answer also correctly identifies these sources, aligning with the reference in terms of relevance to the question asked."}
+======================================================================
+oos-06 ['heuristic'] in_scope = False
+Q: How old is the universe?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: The answer to "How old is the universe?" based on the provided context is not explicitly stated or directly answered in the given information. The context discusses various topics such as weather, World Cup winners, pasta carbonara recipes, and questions about taxes but does not provide a specific a
+cites_source: False | refusal: False
+======================================================================
+oos-07 ['heuristic'] in_scope = False
+Q: Who wrote the novel Pride and Prejudice?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: The provided context does not contain enough information to answer the question directly. The context discusses various metrics related to a search engine system's performance, including recall rates, average query times, and memory usage for different indexing strategies (HNSW vs IVF). However, it 
+cites_source: False | refusal: True
+======================================================================
+oos-08 ['heuristic'] in_scope = False
+Q: What are the symptoms of the flu?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: The provided code snippet is a function that calculates and returns drift metrics for input and output quality based on baseline and current data. It includes two dictionaries, one for "input_drift" and another for "output_quality_drift". The function uses statistical methods to determine if there h
+cites_source: False | refusal: True
+======================================================================
+oos-09 ['heuristic'] in_scope = False
+Q: Can you write me a short poem about the ocean?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: 3
+cites_source: False | refusal: False
+======================================================================
+oos-10 ['heuristic'] in_scope = False
+Q: What's the current price of Bitcoin?
+Split strings:   0%|          | 0/1 [00:00<?, ?it/s]                                                    BM25S Retrieve:   0%|          | 0/1 [00:00<?, ?it/s]                                                     A: The current price of Bitcoin is not provided within the given context.
+cites_source: False | refusal: False
