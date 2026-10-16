@@ -8,9 +8,11 @@ jobs:
   golden-set-eval:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      UV_PYTHON: "3.12"
     services:
       qdrant:
-        image: qdrant/qdrant:latest
+        image: qdrant/qdrant:v1.15.0
         ports:
           - 6333:6333
     steps:
