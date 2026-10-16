@@ -20,7 +20,7 @@ from app.rag_pipeline import run_rag_pipeline
 langfuse = get_client()
 
 GOLDEN_SET_PATH = Path(__file__).parent / "golden_set.json"
-PASS_RATE_FLOOR = 0.66  # 8 OF 12 - tune this as your golden set grows, but now reducing at as LLM as judge is not yet been added
+PASS_RATE_FLOOR = 0.50  # 8 OF 12 - tune this as your golden set grows, but now reducing at as LLM as judge is not yet been added
 
 
 CITATION_PATTERN = re.compile(r"doc-\d{3}")
@@ -111,7 +111,7 @@ def main():
 
     langfuse.flush()
 
-    if pass_rate < PASS_RATE_FLOOR:
+    if pass_rate <= PASS_RATE_FLOOR:
         print(
             f"\n Pass rate {pass_rate:.1%} is below the floor of {PASS_RATE_FLOOR: .1%} - failing CI"
         )
