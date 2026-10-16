@@ -111,7 +111,7 @@ def main():
 
     langfuse.flush()
 
-    if pass_rate <= PASS_RATE_FLOOR:
+    if pass_rate < PASS_RATE_FLOOR:
         print(
             f"\n Pass rate {pass_rate:.1%} is below the floor of {PASS_RATE_FLOOR: .1%} - failing CI"
         )
