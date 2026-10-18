@@ -72,6 +72,7 @@ reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
 class RankedChunk(TypedDict):
     id: str
     score: float
+    payload: dict[str, str]
 
 
 def rerank(query: str, candidate_ids: list[str], top_k: int = 5) -> list[RankedChunk]:
@@ -81,7 +82,14 @@ def rerank(query: str, candidate_ids: list[str], top_k: int = 5) -> list[RankedC
     pairs = [(query, chunk_lookup.get(cid, "")) for cid in candidate_ids]
     scores = reranker.predict(pairs)
     ranked = sorted(zip(candidate_ids, scores), key=lambda x: x[1], reverse=True)
-    return [{"id": cid, "score": float(score)} for cid, score in ranked[:top_k]]
+    return [
+        {
+            "id": cid,
+            "score": float(score),
+            "payload": payload_lookup.get(cid, {}),
+        }
+        for cid, score in ranked[:top_k]
+    ]
 
 
 def hybrid_search(query: str, fuse_k: int = 20, final_k: int = 5) -> list[RankedChunk]:

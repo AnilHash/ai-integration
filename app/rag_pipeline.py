@@ -26,6 +26,7 @@ def retrieve_documents(query: str, top_k: int = 5) -> list[dict]:
             "id": str(item["id"]),
             "text": chunk_lookup.get(item["id"], ""),
             "score": item["score"],
+            "source_id": item.get("payload", {})["source_doc"],
         }
         for item in result
     ]
@@ -43,14 +44,34 @@ def retrieve_documents(query: str, top_k: int = 5) -> list[dict]:
 
 
 @observe(name="context_assembly")
-def assemble_context(chunks: list[dict]) -> str:
-    context_parts = [f"[Source:{c['id']}]\n{c['text']}" for c in chunks]
-    context = "\n\n---\n\n".join(context_parts)
+def assemble_context(chunks: list[dict]) -> tuple[str, list[dict]]:
+    """
+    Returns (context_string, citations). `citations` is the doc-00N -> source_doc
+    manifest matching the numbered citation labels the prompt template asks
+    the model to use.
+    """
+    lines, citations = [], []
+    for i, chunk in enumerate(chunks, start=1):
+        label = f"doc-{i:03d}"
+        lines.append(f"[{label}] {chunk['text']}")
+        citations.append(
+            {
+                "label": label,
+                "source_doc": chunk["source_doc"],
+                "chunk_id": chunk["id"],
+            }
+        )
+
+    context = "\n\n".join(lines)
 
     langfuse.update_current_span(
-        output={"context_length_chars": len(context), "num_sources": len(chunks)}
+        output={
+            "context_length_chars": len(context),
+            "num_sources": len(chunks),
+            "citations": citations,
+        }
     )
-    return context
+    return context, citations
 
 
 def generate_answer(query: str, context: str, prompt_version: int | None = None) -> str:
@@ -99,7 +120,7 @@ def run_rag_pipeline(
     ):
         chunks = retrieve_documents(query)
 
-        context = assemble_context(chunks)
+        context, citations = assemble_context(chunks)
 
         answer = generate_answer(query, context, prompt_version=prompt_version)
 
@@ -113,4 +134,5 @@ def run_rag_pipeline(
         "context": context,
         "chunks_retrieved": len(chunks),
         "trace_id": langfuse.get_current_trace_id(),
+        "citations": citations,
     }

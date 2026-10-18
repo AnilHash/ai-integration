@@ -63,6 +63,13 @@ jobs:
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
         run: uv run python -m eval.run_eval
+      
 
+      - name: Run behavioral regression tests
+        env:
+          OLLAMA_MODEL: qwen2.5:1.5b
+        run: uv run python -m eval.run_behavioral_tests
+
+        
       - name: Run Recall@5 gate
         run: uv run python -m eval.ci_recall_gate
