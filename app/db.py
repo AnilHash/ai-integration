@@ -83,3 +83,29 @@ async def init_eval_tables():
                            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
                            )
             """)
+
+
+async def migrate_request_log_add_answer():
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "ALTER TABLE request_log ADD COLUMN IF NOT EXISTS answer TEXT"
+        )
+
+
+async def init_feedback_table():
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS feedback (
+                            id SERIAL PRIMARY KEY,
+                            trace_id TEXT NOT NULL,
+                            query TEXT NOT NULL,
+                           answer TEXT NOT NULL,
+                           rating TEXT NOT NULL, -- 'up' | 'down'
+                           reason TEXT,
+                           signal_type TEXT NOT NULL, -- 'explicit' | 'implicit_retry'
+                           promoted BOOLEAN NOT NULL DEFAULT false,
+                           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                           )
+            """)

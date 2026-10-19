@@ -2,19 +2,21 @@ from datetime import datetime, timedelta, timezone
 import json
 from statistics import mean, median
 import statistics
+import langfuse
+from typing import Literal
+from pydantic import BaseModel
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, Query as QueryParam
 
 from dotenv import load_dotenv
 
 load_dotenv()
-import langfuse
 
 from app.db import get_pool, init_request_log_table
 from score_answer import score_answer
 from scripts.run_prompt_ab_test import two_proportion_z_test
 
-
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Query as QueryParam
+from app.feedback import record_implicit_negative
 from app.instrumentation import verify_langfuse_connection
 from app.rag_pipeline import run_rag_pipeline
 from app.z_test_means import two_sample_z_test_means
@@ -49,7 +51,6 @@ async def query_endpoint(
     ),
 ):
     pool = await get_pool()
-    print(pool)
     try:
         result = run_rag_pipeline(
             query=q, user_id=user_id, prompt_version=prompt_version
@@ -72,6 +73,7 @@ async def query_endpoint(
                 scores["reasonable_length"],
                 str(prompt_version) if prompt_version else "production",
             )
+            await record_implicit_negative(user_id, q, result["trace_id"])
             return result
     except Exception as exc:
         print(exc)
@@ -318,3 +320,36 @@ async def drift_report(
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+class FeedbackRequest(BaseModel):
+    trace_id: str
+    query: str
+    answer: str
+    rating: Literal["up", "down"]
+    reason: str | None = None
+
+
+@app.post("/feedback")
+async def submit_feedback(feedback: FeedbackRequest):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO feedback (trace_id, query, answer, rating, reason, signal_type)
+            VALUES ($1, $2, $3,$4,$5, 'explicit')
+            """,
+            feedback.trace_id,
+            feedback.query,
+            feedback.answer,
+            feedback.rating,
+            feedback.reason,
+        )
+
+    langfuse_client.create_score(
+        trace_id=feedback.trace_id,
+        name="user.rating",
+        value=(feedback.rating == "up"),
+        data_type="BOOLEAN",
+    )
+    return {"status": "recorded"}
