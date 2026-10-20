@@ -26,7 +26,7 @@ def retrieve_documents(query: str, top_k: int = 5) -> list[dict]:
             "id": str(item["id"]),
             "text": chunk_lookup.get(item["id"], ""),
             "score": item["score"],
-            "source_id": item.get("payload", {})["source_doc"],
+            "source_doc": item.get("payload", {}).get("source_doc", "unknown"),
         }
         for item in result
     ]
@@ -115,7 +115,7 @@ def run_rag_pipeline(
 ) -> dict:
     with propagate_attributes(
         user_id=user_id,
-        tags=["rag", "v1", "mock_retrieval"],
+        tags=["rag", "v3", "hybrid"],
         metadata={"pipeline_version": "2.1", "query_length": str(len(query))},
     ):
         chunks = retrieve_documents(query)

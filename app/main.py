@@ -7,12 +7,12 @@ from typing import Literal
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query as QueryParam
-
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.db import get_pool, init_request_log_table
+from app.db import get_pool, init_request_log_table, init_feedback_table
 from score_answer import score_answer
 from scripts.run_prompt_ab_test import two_proportion_z_test
 
@@ -22,6 +22,7 @@ from app.rag_pipeline import run_rag_pipeline
 from app.z_test_means import two_sample_z_test_means
 
 langfuse_client = langfuse.get_client()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
             "Check env variables."
         )
     await init_request_log_table()
+    await init_feedback_table()
     yield
 
 
@@ -56,7 +58,7 @@ async def query_endpoint(
             query=q, user_id=user_id, prompt_version=prompt_version
         )
         scores = score_answer(result["trace_id"], result["answer"])
-
+        print("trace-id", result["trace_id"])
         async with pool.acquire() as conn:
             await conn.execute(
                 """
@@ -77,6 +79,7 @@ async def query_endpoint(
             return result
     except Exception as exc:
         print(exc)
+        logger.exception("query failed")
         async with pool.acquire() as conn:
             await conn.execute(
                 """
