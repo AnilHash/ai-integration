@@ -12,7 +12,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.db import get_pool, init_request_log_table, init_feedback_table
+from app.db import (
+    get_pool,
+    init_request_log_table,
+    init_feedback_table,
+    migrate_request_log_add_answer,
+)
 from score_answer import score_answer
 from scripts.run_prompt_ab_test import two_proportion_z_test
 
@@ -34,6 +39,7 @@ async def lifespan(app: FastAPI):
             "Check env variables."
         )
     await init_request_log_table()
+    await migrate_request_log_add_answer()
     await init_feedback_table()
     yield
 

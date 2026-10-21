@@ -11,6 +11,7 @@ dependencies = [
     "faiss-cpu>=1.15.0",
     "fastapi[standard]>=0.139.0",
     "langfuse==4.14.0",
+    "langgraph>=1.2.16",
     "matplotlib>=3.11.1",
     "numpy>=2.5.1",
     "openai>=2.44.0",
