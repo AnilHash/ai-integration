@@ -9,6 +9,8 @@ services:
       POSTGRES_DB: scorer_db
     ports:
       - "5435:5432"
+    mem_limit: 1g
+    memswap_limit: 1g
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

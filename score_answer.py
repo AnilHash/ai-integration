@@ -1,5 +1,8 @@
-import re
+from dotenv import load_dotenv
 
+load_dotenv()
+
+import re
 from langfuse import get_client
 
 langfuse_client = get_client()

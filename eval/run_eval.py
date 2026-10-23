@@ -87,7 +87,6 @@ def main():
     max_attempts = 3
     golden_set = json.loads(GOLDEN_SET_PATH.read_text())
     results = [evaluate_item(item, max_attempts) for item in golden_set]
-    print("Just test change")
     passed_count = sum(r["passed"] for r in results)
     total = len(results)
     pass_rate = passed_count / total

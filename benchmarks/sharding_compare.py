@@ -1,4 +1,4 @@
-from benchmarks.scale_benchmark_1 import run
+from benchmarks.scale_benchmark import run
 
 run("scale_100k_1shard", 100000, shard_number=1)
 run("scale_100k_4shard", 100000, shard_number=4)

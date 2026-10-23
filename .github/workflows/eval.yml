@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ollama/models
-          key: ollama-gemma2.2b
+          key: ollama-gemma2:2b
 
       - name: Install Ollama
         run: curl -fsSL https://ollama.com/install.sh | sh
@@ -47,7 +47,7 @@ jobs:
               curl -s http://localhost:11434/api/tags > /dev/null && break
               sleep 1
           done
-          ollama pull gemma2.2b
+          ollama pull gemma2:2b
 
       - name: Seed Qdrant with golden-set corpus
         run: uv run python -m scripts.load_chunks
@@ -58,7 +58,7 @@ jobs:
       - name: Run golden set eval
         timeout-minutes: 45
         env:
-          OLLAMA_MODEL: gemma2.2b
+          OLLAMA_MODEL: gemma2:2b
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}

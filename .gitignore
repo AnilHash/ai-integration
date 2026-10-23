@@ -11,3 +11,7 @@ wheels/
 
 eval/golden/candidates_*.json
 .env
+.env.*
+*.log
+*.jsonl
+debug_*
