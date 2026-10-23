@@ -10,7 +10,7 @@ PLANNER_PROMPT = """
 Given this task, write a numbered list of steps using ONLY these tools, in the exact order you'd execute them. Do not include conditional logic
 ("if X then Y") -- write a straight-line sequence of steps.
 
-Tools: search_docs(query), word_count(text),final_answer(text)
+Tools: search_docs(query), word_count(text), final_answer(text)
 Format: 
 1. tool_name("argument")
 2. tool_name("argument")
